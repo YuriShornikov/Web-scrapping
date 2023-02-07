@@ -1,58 +1,61 @@
 import requests
 from bs4 import BeautifulSoup
 from fake_headers import Headers
+import json
 
 HOST = 'https://spb.hh.ru/search/vacancy?text=python+Django+Flask&salary=&area=1&area=2&ored_clusters=true&enable_snippets=true'
 
-def get_headers():
-    headers = Headers(browser='firefox', os='win')
-    return headers.generate()
+data_list = []
 
-hh = requests.get(HOST, headers=get_headers())
-hh_python = hh.text
+for i in range(0, 4):
+    url = HOST + '&page=' + str(i)
 
-# print(hh_python)
-soup = BeautifulSoup(hh_python, features='lxml')
+    def get_headers():
+        headers = Headers(browser='firefox', os='win')
+        return headers.generate()
 
-hh = soup.find_all('div', class_='serp-item')
+    hh = requests.get(url, headers=get_headers())
+    hh_python = hh.text
 
-# print(hh)
+    # print(hh_python)
+    soup = BeautifulSoup(hh_python, features='lxml')
 
-for prof in hh:
-    # print(prof)
-    href_a = prof.find('a')
-    href = href_a['href']
-    # print(href)
+    hh = soup.find_all('div', class_='serp-item')
 
-    salary_span = prof.find('span', class_='bloko-header-section-3')
-    print(salary_span)
-    salary_num = salary_span.text
-    print(salary_num)
+    # print(hh)
 
-#     serp_item_title = soup.find('div', class_='serp-item__title')
-#     print(serp_item_title)
-#     prof_text = prof.text
-#     print(prof_text)
-    # href = prof_text.find('href')
-    # print(prof)
-# print(serp_item)
-# vacancy_serp_content = soup.find('div', class_='vacancy-serp-content')
-# serp_item = vacancy_serp_content.find_all('serp-item')
-# print(serp_item)
+    for prof in hh:
+        # print(prof)
+        href_code = prof.find('a')
+        href = href_code['href']
+        # print(href)
 
-# print(vacancy_serp_content)
-# print(serp_item)
-# serp_item_title = soup.find_all('a', class_='serp-item__title')
-# print(serp_item_title)
+        salary_code = prof.find('span', class_='bloko-header-section-3')
+        if salary_code == None:
+            salary = ' '
+        else:
+            salary = salary_code.text
 
-# for prof in serp_item_title:
-#     # header = prof.find('a')
-#     title = prof.text
-#     href = prof['href']
-#
-#     # href = prof.find['href']
-#     print(href)
+        #не выводит нормально зарплату
 
-# hh_link = hh_articles.find('a')
-# print(serp_item_title)
+        name_code = prof.find('div', class_='vacancy-serp-item__meta-info-company')
+        name = name_code.text
+
+        city_code = prof.find('div', attrs= {'data-qa': 'vacancy-serp__vacancy-address'}, class_='bloko-text')
+        city = city_code.text.split(',')
+
+
+        form = {
+            'href': href,
+            'salary': salary,
+            'company': name,
+            'city': city[0]
+        }
+        data_list.append(form)
+        # print(data_list)
+
+with open('hh.json', 'w', encoding='utf-8') as f:
+    json.dump(data_list, f, indent=5)
+
+
 
