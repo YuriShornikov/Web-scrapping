@@ -6,7 +6,9 @@ import json
 HOST = 'https://spb.hh.ru/search/vacancy?text=python+Django+Flask&salary=&area=1&area=2&ored_clusters=true&enable_snippets=true'
 
 data_list = []
+data_USD = []
 
+#т.к. объявления на нескольких страницах, организовываем цикл
 for i in range(0, 4):
     url = HOST + '&page=' + str(i)
 
@@ -17,45 +19,55 @@ for i in range(0, 4):
     hh = requests.get(url, headers=get_headers())
     hh_python = hh.text
 
-    # print(hh_python)
     soup = BeautifulSoup(hh_python, features='lxml')
-
     hh = soup.find_all('div', class_='serp-item')
 
-    # print(hh)
-
     for prof in hh:
-        # print(prof)
+        #вывод ссылки на объявление
         href_code = prof.find('a')
         href = href_code['href']
-        # print(href)
-
+        #вывод зарплаты
         salary_code = prof.find('span', class_='bloko-header-section-3')
         if salary_code == None:
             salary = ' '
         else:
             salary = salary_code.text
 
-        #не выводит нормально зарплату
-
+        #вывод наименование компании
         name_code = prof.find('div', class_='vacancy-serp-item__meta-info-company')
         name = name_code.text
-
+        #вывод города
         city_code = prof.find('div', attrs= {'data-qa': 'vacancy-serp__vacancy-address'}, class_='bloko-text')
-        city = city_code.text.split(',')
+        city = city_code.text.split(',')#отделяем город от остального ненужного
 
-
-        form = {
+        #форма для всех вакансий
+        form_all = {
             'href': href,
-            'salary': salary,
-            'company': name,
+            'salary': salary.replace('\u202f', ' '),
+            'company': name.replace('\xa0', ' '),
             'city': city[0]
         }
-        data_list.append(form)
-        # print(data_list)
+        data_list.append(form_all)
 
+#
+#         #форма для USD вакансий
+        form_USD = {
+            'href': href,
+            'salary': salary.replace('\u202f', ' '),
+            'company': name.replace('\xa0', ' '),
+            'city': city[0]
+        }
+        #проверка в какой валюте предлагают оплату
+        salary_USD = salary.split(' ')
+        if salary_USD[-1] == 'USD':
+            data_USD.append(form_USD)#добавление словарей в список USD
+print(data_USD)
+#
 with open('hh.json', 'w', encoding='utf-8') as f:
     json.dump(data_list, f, indent=5)
+
+with open('hh_USD.json', 'w', encoding='utf-8') as f:
+    json.dump(data_USD, f, indent=5)
 
 
 
